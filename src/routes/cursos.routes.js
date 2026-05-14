@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
   try {
     const { nivel, anio_escolar, page = 1, limit = 50 } = req.query;
     const data = await Curso.list({ nivel, anio_escolar, page: +page, limit: +limit });
-    return res$.paginated(res, { ...data, page, limit });
+    return res$.paginated(res, { data: data.rows, total: data.total, page, limit });
   } catch (err) {
     return res$.error(res);
   }
