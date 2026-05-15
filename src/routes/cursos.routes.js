@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
   try {
     const { nivel, anio_escolar, page = 1, limit = 50 } = req.query;
     const data = await Curso.list({ nivel, anio_escolar, page: +page, limit: +limit });
-    return res$.paginated(res, { data: data.rows, total: data.total, page, limit });
+    return res$.paginated(res, { ...data, page, limit });
   } catch (err) {
     return res$.error(res);
   }
@@ -132,5 +132,27 @@ router.post('/:id/asignar-docente',
     }
   }
 );
+
+/**
+ * @route  GET /api/v1/cursos/:id/docentes
+ * @desc   Listar docentes de un curso con su materia
+ */
+router.get('/:id/docentes', async (req, res) => {
+  try {
+    const db = require('../config/db');
+    const [rows] = await db.query(
+      `SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil,
+              u.email, dc.materia, dc.periodo
+       FROM docentes_cursos dc
+       JOIN usuarios u ON u.id_usuario = dc.id_docente
+       WHERE dc.id_curso = ? AND dc.activo = 1
+       ORDER BY dc.materia`,
+      [+req.params.id]
+    );
+    return res$.ok(res, rows);
+  } catch (err) {
+    return res$.error(res);
+  }
+});
 
 module.exports = router;
