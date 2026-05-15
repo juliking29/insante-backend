@@ -17,7 +17,7 @@ router.use(authenticate);
  * @route  GET /api/v1/usuarios
  * @desc   Listar usuarios (paginado) — solo admin
  */
-router.get('/', allow('administrador'), ctrl.list);
+router.get('/', ctrl.list);
 
 /**
  * @route  GET /api/v1/usuarios/me
