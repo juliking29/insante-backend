@@ -82,6 +82,31 @@ const tareasController = {
         }
       }
 
+      // Guardar notificación en BD: estudiantes + acudientes del curso
+      const db = require('../config/db');
+      const [notifUsers] = await db.query(
+        `SELECT DISTINCT u.id_usuario
+         FROM estudiantes_cursos ec
+         JOIN usuarios u ON u.id_usuario = ec.id_estudiante AND u.activo=1
+         WHERE ec.id_curso=? AND ec.activo=1
+         UNION
+         SELECT DISTINCT ae.id_acudiente
+         FROM estudiantes_cursos ec
+         JOIN acudiente_estudiante ae ON ae.id_estudiante=ec.id_estudiante AND ae.activo=1
+         WHERE ec.id_curso=? AND ec.activo=1`,
+        [id_curso, id_curso]
+      );
+      const Lectura = require('../models/Lectura');
+      for (const u of notifUsers) {
+        await Lectura.saveNotification({
+          id_usuario: u.id_usuario,
+          tipo: 'tarea',
+          titulo: `📚 Nueva tarea: ${titulo}`,
+          cuerpo: `${materia} — Entrega: ${fecha_entrega}`,
+          referencia_id: id_tarea,
+        });
+      }
+
       // Push a acudientes
       const tokens = await Tarea.getRecipientsTokens(id_tarea);
       if (tokens.length > 0) {

@@ -87,6 +87,42 @@ const avisosController = {
         }
       }
 
+      // Guardar notificación en BD para cada destinatario
+      const db = require('../config/db');
+      let recipientIds = [];
+      if (es_global) {
+        // Aviso global: todos los usuarios activos excepto el autor
+        const [users] = await db.query(
+          'SELECT id_usuario FROM usuarios WHERE activo=1 AND id_usuario != ?',
+          [id_autor]
+        );
+        recipientIds = users.map(u => u.id_usuario);
+      } else if (id_curso) {
+        // Aviso de curso: estudiantes + acudientes del curso
+        const [users] = await db.query(
+          `SELECT DISTINCT u.id_usuario
+           FROM estudiantes_cursos ec
+           JOIN usuarios u ON u.id_usuario = ec.id_estudiante AND u.activo=1
+           WHERE ec.id_curso=? AND ec.activo=1
+           UNION
+           SELECT DISTINCT ae.id_acudiente
+           FROM estudiantes_cursos ec
+           JOIN acudiente_estudiante ae ON ae.id_estudiante = ec.id_estudiante AND ae.activo=1
+           WHERE ec.id_curso=? AND ec.activo=1`,
+          [id_curso, id_curso]
+        );
+        recipientIds = users.map(u => u.id_usuario);
+      }
+      for (const id_usuario of recipientIds) {
+        await Lectura.saveNotification({
+          id_usuario,
+          tipo: 'aviso',
+          titulo: `${prioridad === 'alta' ? '🔴 URGENTE: ' : '📢 '}${titulo}`,
+          cuerpo: contenido.substring(0, 200),
+          referencia_id: id_aviso,
+        });
+      }
+
       // Enviar push notifications
       const tokens = await Aviso.getRecipientsTokens(id_aviso);
       if (tokens.length > 0) {
