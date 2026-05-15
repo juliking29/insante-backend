@@ -134,4 +134,27 @@ router.post('/:id/asignar-docente',
   }
 );
 
+/**
+ * @route  GET /api/v1/cursos/:id/docentes
+ * @desc   Listar docentes de un curso con su materia
+ */
+router.get('/:id/docentes', async (req, res) => {
+  try {
+    const db = require('../config/db');
+    const [rows] = await db.query(
+      `SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil,
+              u.email, dc.materia, dc.periodo
+       FROM docentes_cursos dc
+       JOIN usuarios u ON u.id_usuario = dc.id_docente
+       WHERE dc.id_curso = ? AND dc.activo = 1
+       ORDER BY dc.materia`,
+      [+req.params.id]
+    );
+    return res$.ok(res, rows);
+  } catch (err) {
+    console.error('docentes by curso:', err);
+    return res$.error(res);
+  }
+});
+
 module.exports = router;
